@@ -1,1 +1,1099 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OptraScan Pro - Chevrolet Optra 1.6 Ultimate OBD2</title>
+    <!-- นำเข้า Tailwind CSS สำหรับการออกแบบ UI ที่สวยงามและรองรับ Responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        optra: {
+                            gold: '#D4AF37',
+                            blue: '#0EA5E9',
+                            dark: '#0B0F19',
+                            slateAccent: '#1E293B',
+                            warning: '#F59E0B',
+                            danger: '#EF4444',
+                            success: '#10B981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Chakra Petch', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* ปรับแต่ง Scrollbar ให้ดูโมเดิร์นเข้ากับธีม */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-full overflow-hidden select-none">
 
+    <!-- ส่วนหัวของแอพ (Header) -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between shrink-0 z-10">
+        <div class="flex items-center space-x-2">
+            <!-- สัญลักษณ์โลโก้โบว์ไทสีทองสไตล์ Chevrolet -->
+            <div class="w-8 h-4 bg-optra-gold transform -skew-x-12 flex items-center justify-center relative rounded-sm shadow-md">
+                <div class="absolute w-4 h-6 bg-optra-gold top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-sm"></div>
+            </div>
+            <div>
+                <h1 class="text-md font-black tracking-wider text-white">OPTRASCAN <span class="text-optra-gold">PRO</span></h1>
+                <p class="text-[9px] text-slate-400 -mt-1 font-mono">CHEVROLET OPTRA 1.6 E-TEC II</p>
+            </div>
+        </div>
+
+        <!-- สถานะการเชื่อมต่อบลูทูธ OBD2 -->
+        <div class="flex items-center space-x-1.5">
+            <button id="btn-bluetooth" onclick="connectOBD2()" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg border border-slate-700 text-slate-300 transition" title="เชื่อมต่อผ่านบลูทูธ">
+                <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11V5a3 3 0 00-6 0v6c0 2.205.512 4.29 1.42 6.145m13.83 0A13.915 13.915 0 0115 11V5a3 3 0 00-6 0v6c0 2.205.512 4.29 1.42 6.145m10.339-1.043l-.054-.09A13.916 13.916 0 0015 11"></path>
+                </svg>
+            </button>
+            <span id="connection-status" class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <span class="w-1.5 h-1.5 mr-1 rounded-full bg-amber-500 animate-pulse"></span>
+                จำลอง (DEMO)
+            </span>
+        </div>
+    </header>
+
+    <!-- พื้นที่แสดงผลสำหรับเนื้อหาหลัก (เปลี่ยนตามแท็บ) -->
+    <main class="flex-1 overflow-y-auto p-3 space-y-4 pb-20">
+
+        <!-- ==================== TAB 1: DASHBOARD (หน้าปัดรวม) ==================== -->
+        <div id="tab-dashboard" class="tab-content active space-y-3">
+            
+            <!-- การแสดงผลรอบเครื่องและความเร็วแบบสปอร์ตเกจ -->
+            <div class="grid grid-cols-2 gap-3">
+                <!-- รอบเครื่องยนต์ (RPM) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest absolute top-3 left-4">รอบเครื่องยนต์ (RPM)</span>
+                    <div class="text-center my-4">
+                        <span id="dash-rpm" class="text-4xl font-black text-white font-mono">0</span>
+                        <div class="text-[11px] text-slate-500 font-bold -mt-1">รอบต่อนาที</div>
+                    </div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="bar-rpm" class="bg-gradient-to-r from-sky-400 via-emerald-400 to-rose-500 h-full transition-all duration-150" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- ความเร็วรถ (Speed) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest absolute top-3 left-4">ความเร็วรถ (SPEED)</span>
+                    <div class="text-center my-4">
+                        <span id="dash-speed" class="text-4xl font-black text-white font-mono">0</span>
+                        <div class="text-[11px] text-slate-500 font-bold -mt-1">กิโลเมตร/ชั่วโมง</div>
+                    </div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="bar-speed" class="bg-sky-500 h-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- การแสดงผลข้อมูลสำคัญ 4 ด้านหลักตามความต้องการของเครื่อง Optra 1.6 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                
+                <!-- 1. อุณหภูมิหม้อน้ำและเครื่องยนต์ (Engine Coolant Temp) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ระบบระบายความร้อนหม้อน้ำ</span>
+                            <h3 class="text-2xl font-black text-white mt-1"><span id="dash-temp">--</span> <span class="text-sm text-slate-400 font-normal">°C</span></h3>
+                        </div>
+                        <span id="lbl-fan-status" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400">พัดลม: ปิด</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-2">
+                        <div id="bar-temp" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div id="alert-temp" class="hidden text-[11px] text-rose-400 bg-rose-950/20 border border-rose-900/30 rounded-lg p-1.5 text-center animate-pulse">
+                        ⚠️ สัญญาณเตือน: อุณหภูมิสูงเกิน 102°C พัดลมจังหวะสองทำงานด่วน!
+                    </div>
+                </div>
+
+                <!-- 2. อัตราการไหลของอากาศ (MAF Sensor) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">อัตราการไหลของอากาศ (MAF)</span>
+                            <h3 class="text-2xl font-black text-white mt-1"><span id="dash-maf">--</span> <span class="text-sm text-slate-400 font-normal">g/s</span></h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[9px] text-slate-500 block">ลิ้นปีกผีเสื้อ</span>
+                            <span class="text-xs font-bold text-white"><span id="dash-tps">--</span>%</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-2">
+                        <div id="bar-maf" class="bg-sky-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- 3. อัตราการสิ้นเปลืองน้ำมัน (Fuel Economy & Consumption) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 relative overflow-hidden">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">การคำนวณอัตราสิ้นเปลืองน้ำมัน</span>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                            <span class="text-[9px] text-slate-500 block">อัตราสิ้นเปลืองปัจจุบัน</span>
+                            <h4 class="text-lg font-bold text-white"><span id="dash-fuel-lh">--</span> <span class="text-xs text-slate-400 font-normal">L/h</span></h4>
+                        </div>
+                        <div>
+                            <span class="text-[9px] text-slate-500 block">อัตราการเดินทางเฉลี่ย</span>
+                            <h4 class="text-lg font-bold text-white"><span id="dash-fuel-kml">--</span> <span class="text-xs text-slate-400 font-normal">km/L</span></h4>
+                        </div>
+                    </div>
+                    <p class="text-[9px] text-slate-500 pt-1 border-t border-slate-850">* ประเมินจากความเร็วรถและสัดส่วนปริมาตรอากาศของเครื่องยนต์ 1.6L</p>
+                </div>
+
+                <!-- 4. ระบบการทำงานของแอร์และภาระเครื่องยนต์ (A/C Status & Load) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 relative overflow-hidden">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">สถานะของระบบแอร์รถยนต์</span>
+                        <span id="dash-ac-clutch" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-500">CLUTCH OFF</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                            <span class="text-[9px] text-slate-500 block">แรงดันน้ำยาแอร์ (ACP)</span>
+                            <h4 class="text-lg font-bold text-white"><span id="dash-ac-press">--</span> <span class="text-xs text-slate-400 font-normal">kPa</span></h4>
+                        </div>
+                        <div>
+                            <span class="text-[9px] text-slate-500 block">ภาระเครื่องยนต์จากแอร์</span>
+                            <h4 class="text-lg font-bold text-white"><span id="dash-ac-load">--</span> <span class="text-xs text-slate-400 font-normal">%</span></h4>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- แผงควบคุมสไลเดอร์สำหรับทดสอบจำลองค่าบนเว็บบนโฮสติ้ง (Simulation Control Panel) -->
+            <div id="sim-control-panel" class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-3">
+                <div class="flex justify-between items-center border-b border-slate-800/80 pb-2">
+                    <span class="text-xs font-bold text-amber-500 flex items-center">
+                        <span class="w-2 h-2 mr-1.5 rounded-full bg-amber-500 animate-ping"></span>
+                        แผงปรับแต่งค่าจำลอง (เพื่อทดสอบการทำงานบนเว็บโฮสติ้ง)
+                    </span>
+                    <button onclick="toggleDemoMode()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-white px-2 py-0.5 rounded border border-slate-700">สลับโหมด</button>
+                </div>
+                
+                <div class="space-y-2">
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-400">
+                            <span>ความเร็วรอบเครื่องยนต์ (0 - 7000 RPM)</span>
+                            <span class="text-white font-bold" id="lbl-sim-rpm">800 RPM</span>
+                        </div>
+                        <input type="range" id="sim-rpm" min="0" max="7000" value="800" oninput="onSimSliderChange()" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-optra-gold">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-400">
+                            <span>อุณหภูมิเครื่องยนต์ (40 - 120 °C)</span>
+                            <span class="text-white font-bold" id="lbl-sim-temp">85 °C</span>
+                        </div>
+                        <input type="range" id="sim-temp" min="40" max="120" value="85" oninput="onSimSliderChange()" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-optra-gold">
+                    </div>
+                    <div class="flex items-center justify-between pt-1">
+                        <span class="text-xs text-slate-400">จำลองการกดสวิตช์เปิดแอร์ (A/C Request Switch)</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="sim-ac" checked onchange="onSimSliderChange()" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==================== TAB 2: DIAGNOSTICS (ระบบวิเคราะห์และลบโค้ด) ==================== -->
+        <div id="tab-diagnostics" class="tab-content hidden space-y-4">
+            
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <div>
+                        <h2 class="text-md font-bold text-white">ระบบสแกนโค้ดบกพร่อง & ลบไฟเครื่อง</h2>
+                        <p class="text-[10px] text-slate-500">Mode 03 (Read) & Mode 04 (Clear) สำหรับ ECU Optra 1.6</p>
+                    </div>
+                    <span id="dtc-counter" class="px-2.5 py-0.5 rounded text-xs font-black bg-emerald-500/10 text-emerald-400">0 รายการ</span>
+                </div>
+
+                <!-- รายการแสดงรหัสเสีย -->
+                <div id="diag-dtc-container" class="space-y-3 min-h-32">
+                    <!-- จะถูกเติมโดย JS -->
+                </div>
+
+                <!-- ปุ่มควบคุมการทำงาน -->
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="readDTCs()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center space-x-2 shadow-md">
+                        <svg class="w-4 h-4 text-optra-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <span>เริ่มสแกนโค้ด (Read)</span>
+                    </button>
+                    <button onclick="confirmClearDTCs()" class="bg-rose-950/40 hover:bg-rose-900/40 border border-rose-900/40 text-rose-400 font-bold py-3 rounded-xl text-sm transition flex items-center justify-center space-x-2 shadow-md">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <span>ลบโค้ดไฟเตือน (Clear)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ชุดจำลองสร้างปัญหาในรถยนต์ -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-2">
+                <h3 class="text-xs font-bold text-slate-400">จำลองปัญหาขัดข้องเพื่อทดสอบการสแกนและดับโค้ด:</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="triggerFault('P0300')" class="bg-slate-800 hover:bg-slate-700 text-[11px] py-1.5 rounded border border-slate-700">P0300 (ไฟรั่ว-เครื่องเดินสะดุด)</button>
+                    <button onclick="triggerFault('P0171')" class="bg-slate-800 hover:bg-slate-700 text-[11px] py-1.5 rounded border border-slate-700">P0171 (ไอดีรั่ว-ส่วนผสมบาง)</button>
+                    <button onclick="triggerFault('P0400')" class="bg-slate-800 hover:bg-slate-700 text-[11px] py-1.5 rounded border border-slate-700">P0400 (ระบบหมุนเวียนไอเสีย EGR)</button>
+                    <button onclick="triggerFault('P0130')" class="bg-slate-800 hover:bg-slate-700 text-[11px] py-1.5 rounded border border-slate-700">P0130 (O2 Sensor ชำรุด)</button>
+                </div>
+            </div>
+
+            <!-- ข้อมูล Freeze Frame บันทึกขณะเกิดปัญหา -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">ECU Freeze Frame Data (ข้อมูลหยุดนิ่งขณะเกิดปัญหา)</span>
+                <div id="freeze-frame-log" class="text-xs font-mono text-slate-400 bg-slate-950 p-3 rounded-lg border border-slate-850 space-y-1">
+                    <span class="text-slate-600">// ไม่มีข้อมูล Freeze Frame ล่าสุดจนกว่าจะมีโค้ดเสียปรากฏ</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==================== TAB 3: LIVE GRAPHS (กราฟวิเคราะห์เรียลไทม์) ==================== -->
+        <div id="tab-graphs" class="tab-content hidden space-y-4">
+            
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-md font-bold text-white">กราฟแสดงแนวโน้มค่าเซนเซอร์</h2>
+                        <p class="text-[10px] text-slate-500">ข้อมูลสัญญาณแบบเรียลไทม์ปรับเปลี่ยนต่อเนื่อง</p>
+                    </div>
+                    <div class="flex space-x-1">
+                        <button onclick="changeActiveGraph('temp')" id="btn-g-temp" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500 text-slate-950">หม้อน้ำ</button>
+                        <button onclick="changeActiveGraph('maf')" id="btn-g-maf" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">อากาศ</button>
+                        <button onclick="changeActiveGraph('rpm')" id="btn-g-rpm" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">รอบเครื่อง</button>
+                    </div>
+                </div>
+
+                <!-- Canvas สำหรับวาดกราฟแบบเรียลไทม์ -->
+                <div class="bg-slate-950 rounded-xl p-2 border border-slate-800 overflow-hidden">
+                    <canvas id="live-canvas" class="w-full h-44"></canvas>
+                </div>
+
+                <div class="flex justify-between text-[11px] text-slate-400">
+                    <span>ช่วงความเร็วในการอ่านข้อมูล: 500ms / จุดสัญญาณ</span>
+                    <span>สถานะปัจจุบัน: <span id="graph-status-lbl" class="text-emerald-400">กำลังทำงาน</span></span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==================== TAB 4: PERFORMANCE (วัดสมรรถนะ) ==================== -->
+        <div id="tab-performance" class="tab-content hidden space-y-4">
+            
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
+                <div class="border-b border-slate-800 pb-2">
+                    <h2 class="text-md font-bold text-white">การวัดสถิติอัตราเร่งและสมรรถนะ</h2>
+                    <p class="text-[10px] text-slate-500">จับอัตราเร่งความเร็วของเครื่องยนต์ F16D3 (109 แรงม้า)</p>
+                </div>
+
+                <!-- ตัวนับเวลา -->
+                <div class="p-6 bg-slate-950 rounded-2xl border border-slate-850">
+                    <span class="text-xs text-slate-400 uppercase tracking-widest block mb-1">ตัวจับอัตราเร่ง 0 - 100 กม./ชม.</span>
+                    <h2 id="perf-timer" class="text-5xl font-black font-mono text-optra-gold">00.00 <span class="text-lg">วินาที</span></h2>
+                    <div class="text-xs text-slate-500 mt-2" id="perf-status">
+                        เตรียมพร้อม: เหยียบคันเร่งจากความเร็ว 0 กม./ชม. เพื่อให้ระบบจับเวลาอัตโนมัติ
+                    </div>
+                </div>
+
+                <!-- รายงานข้อมูลรอบและความเร็วสูงสุด -->
+                <div class="grid grid-cols-2 gap-3 text-left">
+                    <div class="bg-slate-950 border border-slate-850 rounded-xl p-3">
+                        <span class="text-[9px] text-slate-500 block">สถิติความเร็วสูงสุด</span>
+                        <h4 class="text-lg font-bold text-white"><span id="perf-max-speed">0</span> km/h</h4>
+                    </div>
+                    <div class="bg-slate-950 border border-slate-850 rounded-xl p-3">
+                        <span class="text-[9px] text-slate-500 block">สถิติรอบเครื่องยนต์สูงสุด</span>
+                        <h4 class="text-lg font-bold text-white"><span id="perf-max-rpm">0</span> RPM</h4>
+                    </div>
+                </div>
+
+                <button onclick="resetPerformanceStats()" class="w-full bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl text-xs font-bold border border-slate-700">
+                    รีเซ็ตสถิติเพื่อเริ่มจับใหม่
+                </button>
+            </div>
+
+        </div>
+
+        <!-- ==================== TAB 5: MAINTENANCE (บันทึกบำรุงรักษา) ==================== -->
+        <div id="tab-maintenance" class="tab-content hidden space-y-4">
+            
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+                <div class="border-b border-slate-800 pb-2">
+                    <h2 class="text-md font-bold text-white">บันทึกดูแลและแก้ไขจุดอ่อนเฉพาะรุ่น Optra 1.6</h2>
+                    <p class="text-[10px] text-slate-500">รวมแนวทางการบำรุงรักษาเพื่อหลีกเลี่ยงอาการเสียกลางทาง</p>
+                </div>
+
+                <!-- รายการเช็คลิสต์จุดอ่อนเฉพาะรุ่น -->
+                <div class="space-y-2">
+                    <label class="flex items-start space-x-3 p-3 bg-slate-950 rounded-xl border border-slate-850 cursor-pointer">
+                        <input type="checkbox" checked class="mt-1 rounded border-slate-700 text-optra-gold bg-slate-800 focus:ring-0">
+                        <div>
+                            <span class="text-xs font-bold text-white">ปะเก็นฝาวาล์ว และโอริงเบ้าหัวเทียน</span>
+                            <p class="text-[10px] text-slate-400">ควรตรวจสอบทุกๆ 40,000 กม. เพื่อหลีกเลี่ยงปัญหาน้ำมันรั่วลงไปขังที่เบ้าหัวเทียนจนเครื่องยนต์ทำงานผิดพลาด (Misfire)</p>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start space-x-3 p-3 bg-slate-950 rounded-xl border border-slate-850 cursor-pointer">
+                        <input type="checkbox" class="mt-1 rounded border-slate-700 text-optra-gold bg-slate-800 focus:ring-0">
+                        <div>
+                            <span class="text-xs font-bold text-white">เปลี่ยนวาล์วน้ำพลาสติกเป็นโครงโลหะ/ทองเหลือง</span>
+                            <p class="text-[10px] text-slate-400">เสื้อวาล์วน้ำพลาสติกเดิมติดรถมักแตกร้าวตามอายุงาน แนะนำเปลี่ยนเป็นแบบอลูมิเนียมหรือทองเหลืองเพื่อป้องกันปัญหาน้ำแห้ง</p>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start space-x-3 p-3 bg-slate-950 rounded-xl border border-slate-850 cursor-pointer">
+                        <input type="checkbox" class="mt-1 rounded border-slate-700 text-optra-gold bg-slate-800 focus:ring-0">
+                        <div>
+                            <span class="text-xs font-bold text-white">รอบเปลี่ยนสายพานราวลิ้น (Timing Belt)</span>
+                            <p class="text-[10px] text-slate-400">เปลี่ยนที่ระยะที่เหมาะสม ไม่ควรเกิน 60,000 กม. ป้องกันสายพานขาดจนวาล์วคดชนลูกสูบ</p>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start space-x-3 p-3 bg-slate-950 rounded-xl border border-slate-850 cursor-pointer">
+                        <input type="checkbox" class="mt-1 rounded border-slate-700 text-optra-gold bg-slate-800 focus:ring-0">
+                        <div>
+                            <span class="text-xs font-bold text-white">ล้างทำความสะอาดชุดมอเตอร์เดินเบา (IACV)</span>
+                            <p class="text-[10px] text-slate-400">แก้ไขปัญหาอาการรอบเครื่องยนต์วูบสั่นตอนถอนคันเร่งหรือเปิดแอร์ด้วยการล้างทำความสะอาดเขม่า</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ประวัติการทำงานและการดึงข้อมูลสัญญาณ (Log) -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+            <div class="flex justify-between items-center">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">บันทึกรับส่งข้อมูลรถยนต์ (Log)</span>
+                <button onclick="clearSystemLog()" class="text-[10px] text-slate-500 hover:text-slate-300">ล้างประวัติ</button>
+            </div>
+            <div id="terminal-sys-log" class="bg-slate-950 p-2.5 rounded-lg h-24 font-mono text-[10px] overflow-y-auto text-emerald-500 border border-slate-850 space-y-0.5">
+                <div>[SYSTEM] แอปพลิเคชันพร้อมทำงาน ยินดีต้อนรับสู่ระบบตรวจวัด Chevrolet Optra 1.6</div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ป๊อปอัปแจ้งเตือนส่วนตัว (Custom Modal Dialog แทนการใช้ alert) -->
+    <div id="custom-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-sm w-full space-y-4">
+            <h3 id="modal-title" class="text-md font-bold text-white"></h3>
+            <p id="modal-desc" class="text-xs text-slate-400 leading-relaxed"></p>
+            <div id="modal-actions" class="flex space-x-2 justify-end">
+                <button id="modal-btn-cancel" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs">ยกเลิก</button>
+                <button id="modal-btn-confirm" class="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg text-xs">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- แถบนำทางด้านล่างหน้าจอ (Bottom Navigation Bar) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-850 px-2 py-2 grid grid-cols-5 gap-1 z-20">
+        <button id="nav-btn-dashboard" onclick="switchTab('dashboard')" class="flex flex-col items-center justify-center py-1 text-sky-400">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            <span class="text-[9px] font-medium">หน้าปัด</span>
+        </button>
+        <button id="nav-btn-diagnostics" onclick="switchTab('diagnostics')" class="flex flex-col items-center justify-center py-1 text-slate-400">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <span class="text-[9px] font-medium">เช็คโค้ด</span>
+        </button>
+        <button id="nav-btn-graphs" onclick="switchTab('graphs')" class="flex flex-col items-center justify-center py-1 text-slate-400">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            <span class="text-[9px] font-medium">วิเคราะห์กราฟ</span>
+        </button>
+        <button id="nav-btn-performance" onclick="switchTab('performance')" class="flex flex-col items-center justify-center py-1 text-slate-400">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span class="text-[9px] font-medium">วัดกำลัง</span>
+        </button>
+        <button id="nav-btn-maintenance" onclick="switchTab('maintenance')" class="flex flex-col items-center justify-center py-1 text-slate-400">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+            <span class="text-[9px] font-medium">สเปครถ</span>
+        </button>
+    </nav>
+
+    <!-- สคริปต์ควบคุมตรรกะและประมวลผลเซนเซอร์ทั้งหมด -->
+    <script>
+        // กำหนดตัวแปรและสถานะเริ่มต้นของระบบ
+        let activeTab = 'dashboard';
+        let isDemoMode = true;
+        let isConnected = false;
+        let obdDevice = null;
+        let obdCharacteristic = null;
+        let mainTimerInterval = null;
+
+        // ข้อมูลหลักของรถที่ใช้วิเคราะห์ประมวลผลในหน้าจอต่างๆ
+        let carData = {
+            rpm: 0,
+            speed: 0,
+            coolantTemp: 45, // ค่าเริ่มต้นตอนสตาร์ทอุ่นเครื่อง
+            maf: 2.7,
+            tps: 12,
+            acPressure: 850,
+            acStatus: true,
+            acClutch: true,
+            acLoad: 11,
+            fuelRate: 0.0,
+            fuelEconomy: 0.0
+        };
+
+        // ข้อมูลบันทึกประวัติการทดสอบสมรรถนะ
+        let performanceStats = {
+            maxSpeed: 0,
+            maxRpm: 0,
+            timerActive: false,
+            timerStartTime: 0,
+            accelerationTime: "00.00"
+        };
+
+        // สถานะการพล็อตกราฟเรียลไทม์
+        let activeGraphType = 'temp'; // 'temp' | 'maf' | 'rpm'
+        let graphHistory = [];
+        const maxGraphPoints = 60;
+
+        // ข้อมูลรหัสแจ้งปัญหา (DTC) ที่พบบ่อยในโมเดล Optra 1.6
+        let currentDTCs = [];
+        const dtcDatabase = {
+            'P0171': { title: 'P0171 - System Too Lean (Bank 1)', desc: 'ท่อรวมไอดีรั่วบ่อย หรือเซนเซอร์แอร์โฟล์ว/ออกซิเจนจับค่าส่วนผสมน้ำมันและอากาศบางเกินไป ทำให้ไฟเครื่องโชว์ รอบเดินเบาสวิง' },
+            'P0300': { title: 'P0300 - Ignition Misfire Detected', desc: 'ตรวจพบสูบลูกสูบจุดระเบิดผิดพลาด ส่วนใหญ่น้ำมันซึมลงหัวเทียนเนื่องจากโอริงปะเก็นฝาวาล์วเสื่อมสภาพ' },
+            'P0400': { title: 'P0400 - EGR Flow Malfunction', desc: 'เขม่าไอเสียอุดตันหน้าวาล์วรีไซเคิลไอเสีย (EGR) ทำให้กำลังเร่งของเครื่องยนต์ตกลงและเดินเบาสั่นสะดุด' },
+            'P0130': { title: 'P0130 - O2 Sensor Bank 1 Sensor 1 Circuit', desc: 'เซนเซอร์ออกซิเจนก่อนแคทตาไลติกเสียหาย ทำให้อัตราสั่งจ่ายน้ำมันไม่สมบูรณ์และบริโภคน้ำมันสูงขึ้น' }
+        };
+
+        // ฟังก์ชันในการสลับแท็บเมนูหน้าจอ
+        function switchTab(tabId) {
+            activeTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            // เปลี่ยนสถานะปุ่มเมนูนำทางด้านล่าง
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.className = "flex flex-col items-center justify-center py-1 text-slate-400";
+            });
+            document.getElementById(`nav-btn-${tabId}`).className = "flex flex-col items-center justify-center py-1 text-sky-400";
+
+            // เรียกวาดกราฟทันทีเมื่อย้ายมาหน้ากราฟวิเคราะห์
+            if (tabId === 'graphs') {
+                renderGraph();
+            }
+        }
+
+        // การสลับโหมดการทำงาน (จำลองค่า หรือ ใช้เชื่อมต่อจริง)
+        function toggleDemoMode() {
+            isDemoMode = !isDemoMode;
+            const statusBadge = document.getElementById('connection-status');
+            if (isDemoMode) {
+                statusBadge.innerHTML = `<span class="w-1.5 h-1.5 mr-1 rounded-full bg-amber-500 animate-pulse"></span>จำลอง (DEMO)`;
+                statusBadge.className = "inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20";
+                document.getElementById('sim-control-panel').classList.remove('opacity-50');
+                writeSystemLog("[SYSTEM] เปลี่ยนสลับกลับมาโหมดจำลองเรียบร้อย สามารถทดสอบระบบผ่านหน้าจอได้แล้ว");
+            } else {
+                statusBadge.innerHTML = `<span class="w-1.5 h-1.5 mr-1 rounded-full bg-rose-500"></span>ออฟไลน์`;
+                statusBadge.className = "inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20";
+                document.getElementById('sim-control-panel').classList.add('opacity-50');
+                writeSystemLog("[SYSTEM] สแตนด์บายเพื่อรอการเชื่อมต่อพอร์ต Bluetooth OBD-II ด้านใต้คอนโซลรถ");
+                carData = { rpm: 0, speed: 0, coolantTemp: 0, maf: 0, tps: 0, acPressure: 0, acStatus: false, acClutch: false, acLoad: 0, fuelRate: 0, fuelEconomy: 0 };
+                updateDashboardUI();
+            }
+        }
+
+        // รับค่าและประมวลผลเซนเซอร์เมื่อมีการเลื่อนสไลเดอร์ปรับค่าแบบแมนนวล
+        function onSimSliderChange() {
+            if (!isDemoMode) return;
+            
+            const rpmVal = parseInt(document.getElementById('sim-rpm').value);
+            const tempVal = parseInt(document.getElementById('sim-temp').value);
+            const acEnabled = document.getElementById('sim-ac').checked;
+
+            document.getElementById('lbl-sim-rpm').innerText = `${rpmVal} RPM`;
+            document.getElementById('lbl-sim-temp').innerText = `${tempVal} °C`;
+
+            carData.rpm = rpmVal;
+            carData.coolantTemp = tempVal;
+            carData.acStatus = acEnabled;
+            
+            // ประมวลผลความสัมพันธ์ระหว่างรอบเครื่องและความเร็วตามสัดส่วนเกียร์อัตโนมัติ Optra
+            if (rpmVal <= 850) {
+                carData.speed = 0;
+                carData.tps = 12;
+                carData.maf = (2.2 + (rpmVal / 1000) * 0.7).toFixed(2);
+            } else {
+                carData.speed = Math.floor((rpmVal - 850) / 40);
+                carData.tps = Math.floor(12 + (rpmVal / 100));
+                carData.maf = ((rpmVal / 180) + (Math.sin(Date.now() / 1000) * 1.5)).toFixed(2);
+            }
+
+            // ประมวลผลภาระงานเครื่องยนต์และการบีบอัดน้ำยาแอร์
+            if (acEnabled) {
+                carData.acClutch = true;
+                carData.acLoad = (rpmVal > 2500) ? 7 : 14;
+                carData.acPressure = Math.floor(920 + (rpmVal / 5) + (Math.sin(Date.now() / 2000) * 80));
+            } else {
+                carData.acClutch = false;
+                carData.acLoad = 0;
+                carData.acPressure = 750;
+            }
+
+            // คำนวณความสิ้นเปลืองเชื้อเพลิงอิงจากสูตรสัดส่วนผสมอากาศไอดีและปริมาตรความหนาแน่นเชื้อเพลิง
+            let fuelLitrePerHour = (parseFloat(carData.maf) * 3600) / (14.7 * 820);
+            carData.fuelRate = fuelLitrePerHour.toFixed(2);
+            if (carData.speed > 0) {
+                carData.fuelEconomy = (carData.speed / fuelLitrePerHour).toFixed(1);
+            } else {
+                carData.fuelEconomy = "0.0";
+            }
+
+            // ประมวลผลเกจสถิติการเร่งความเร็ว
+            handlePerformanceMetrics();
+        }
+
+        // ระบบวนลูปข้อมูลเพื่ออัปเดตสถานะแบบไดนามิกในโหมดเดโม
+        function startAutoDemoLoop() {
+            let ticker = 0;
+            mainTimerInterval = setInterval(() => {
+                if (isDemoMode) {
+                    ticker += 0.05;
+                    
+                    // หากรอบเครื่องอยู่ที่ค่าเดินเบา ให้นิ่มนวลกระดิกเกจเล็กน้อยเพื่อความสมจริง
+                    if (parseInt(document.getElementById('sim-rpm').value) === 800) {
+                        carData.rpm = Math.floor(800 + Math.sin(ticker * 1.5) * 15);
+                        carData.maf = (2.6 + Math.sin(ticker) * 0.15).toFixed(2);
+                        carData.speed = 0;
+                        carData.tps = 12;
+                        
+                        let fuelLitrePerHour = (parseFloat(carData.maf) * 3600) / (14.7 * 820);
+                        carData.fuelRate = fuelLitrePerHour.toFixed(2);
+                        carData.fuelEconomy = "0.0";
+                        
+                        if (document.getElementById('sim-ac').checked) {
+                            carData.acPressure = Math.floor(950 + Math.sin(ticker) * 20);
+                        }
+                    }
+                    
+                    updateDashboardUI();
+                    recordGraphPoint();
+                }
+            }, 500);
+        }
+
+        // พ่นผลอัปเดตลงเกจหน้าปัด Dashboard UI
+        function updateDashboardUI() {
+            document.getElementById('dash-rpm').innerText = carData.rpm;
+            let rpmWidth = Math.min(100, (carData.rpm / 7000) * 100);
+            document.getElementById('bar-rpm').style.width = rpmWidth + '%';
+
+            // ตรวจเช็คสถานะการเข้าใกล้ขีดอันตราย (Redline Warning)
+            if (carData.rpm >= 5800) {
+                document.getElementById('bar-rpm').className = "bg-rose-600 h-full transition-all duration-700 animate-pulse";
+            } else {
+                document.getElementById('bar-rpm').className = "bg-gradient-to-r from-sky-400 via-emerald-400 to-rose-500 h-full transition-all duration-150";
+            }
+
+            document.getElementById('dash-speed').innerText = carData.speed;
+            let speedWidth = Math.min(100, (carData.speed / 200) * 100);
+            document.getElementById('bar-speed').style.width = speedWidth + '%';
+
+            document.getElementById('dash-temp').innerText = carData.coolantTemp ? Math.round(carData.coolantTemp) : '--';
+            let tempWidth = Math.min(100, (carData.coolantTemp / 120) * 100);
+            document.getElementById('bar-temp').style.width = tempWidth + '%';
+
+            // ตรรกะคุมระบบพัดลมไฟฟ้า 2 สเต็ปของรถ Optra 1.6
+            const lblFan = document.getElementById('lbl-fan-status');
+            const alertTemp = document.getElementById('alert-temp');
+            
+            if (carData.coolantTemp >= 97 || carData.acPressure > 1200) {
+                lblFan.innerText = "พัดลม: Step 2 (แรงสุด)";
+                lblFan.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 animate-pulse";
+                document.getElementById('bar-temp').className = "bg-rose-600 h-full rounded-full transition-all duration-500";
+            } else if (carData.coolantTemp >= 93 || (carData.acStatus && carData.acPressure > 800)) {
+                lblFan.innerText = "พัดลม: Step 1 (ปานกลาง)";
+                lblFan.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400";
+                document.getElementById('bar-temp').className = "bg-emerald-500 h-full rounded-full transition-all duration-500";
+            } else {
+                lblFan.innerText = "พัดลม: ปิด";
+                lblFan.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400";
+                document.getElementById('bar-temp').className = "bg-sky-500 h-full rounded-full transition-all duration-500";
+            }
+
+            if (carData.coolantTemp >= 102) {
+                alertTemp.classList.remove('hidden');
+            } else {
+                alertTemp.classList.add('hidden');
+            }
+
+            document.getElementById('dash-maf').innerText = carData.maf;
+            let mafWidth = Math.min(100, (parseFloat(carData.maf) / 75) * 100);
+            document.getElementById('bar-maf').style.width = mafWidth + '%';
+            document.getElementById('dash-tps').innerText = carData.tps;
+
+            document.getElementById('dash-fuel-lh').innerText = carData.fuelRate;
+            document.getElementById('dash-fuel-kml').innerText = carData.fuelEconomy;
+
+            document.getElementById('dash-ac-press').innerText = carData.acPressure;
+            document.getElementById('dash-ac-load').innerText = carData.acLoad;
+            
+            const clutchBadge = document.getElementById('dash-ac-clutch');
+            if (carData.acClutch) {
+                clutchBadge.innerText = "CLUTCH ON";
+                clutchBadge.className = "px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-500/20 text-sky-400 animate-pulse";
+            } else {
+                clutchBadge.innerText = "CLUTCH OFF";
+                clutchBadge.className = "px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-500";
+            }
+        }
+
+        // ==================== ระบบคำนวณวัดประสิทธิภาพรถยนต์ ====================
+        function handlePerformanceMetrics() {
+            // บันทึกความเร็วสูงสุดในการวิ่ง
+            if (carData.speed > performanceStats.maxSpeed) {
+                performanceStats.maxSpeed = carData.speed;
+                document.getElementById('perf-max-speed').innerText = performanceStats.maxSpeed;
+            }
+            // บันทึกรอบสูงสุดในการเร่งเครื่อง
+            if (carData.rpm > performanceStats.maxRpm) {
+                performanceStats.maxRpm = carData.rpm;
+                document.getElementById('perf-max-rpm').innerText = performanceStats.maxRpm;
+            }
+
+            // ระบบตรวจจับเวลา 0-100 กม./ชม. อัจฉริยะแบบสตาร์ทออกตัวตรวจจับเอง
+            const timerEl = document.getElementById('perf-timer');
+            const statusEl = document.getElementById('perf-status');
+
+            if (carData.speed === 0 && !performanceStats.timerActive) {
+                statusEl.innerText = "เตรียมพร้อม: เหยียบคันเร่งจากความเร็ว 0 กม./ชม. เพื่อให้ระบบจับเวลาอัตโนมัติ";
+                statusEl.className = "text-xs text-emerald-400 mt-2";
+            } 
+            else if (carData.speed > 0 && carData.speed < 100 && !performanceStats.timerActive) {
+                performanceStats.timerActive = true;
+                performanceStats.timerStartTime = Date.now();
+                statusEl.innerText = "🔥 จับเวลาแล้ว! เร่งต่อไปให้ถึงความเร็ว 100 กม./ชม.";
+                statusEl.className = "text-xs text-amber-500 mt-2 animate-pulse";
+                runPerfTimer();
+            } 
+            else if (carData.speed >= 100 && performanceStats.timerActive) {
+                performanceStats.timerActive = false;
+                let finalTime = ((Date.now() - performanceStats.timerStartTime) / 1000).toFixed(2);
+                performanceStats.accelerationTime = finalTime;
+                timerEl.innerText = finalTime + " วินาที";
+                statusEl.innerText = `🏁 สำเร็จ! อัตราเร่ง 0-100 อยู่ที่ ${finalTime} วินาที (เกียร์อัตโนมัติ Optra 1.6 มาตรฐาน ~13 วินาที)`;
+                statusEl.className = "text-xs text-emerald-400 mt-2 font-bold";
+            }
+        }
+
+        function runPerfTimer() {
+            if (!performanceStats.timerActive) return;
+            
+            let elapsed = ((Date.now() - performanceStats.timerStartTime) / 1000).toFixed(2);
+            document.getElementById('perf-timer').innerText = elapsed + " วินาที";
+            
+            if (carData.speed >= 100) {
+                performanceStats.timerActive = false;
+                performanceStats.accelerationTime = elapsed;
+                document.getElementById('perf-status').innerText = `🏁 สำเร็จ! อัตราเร่ง 0-100 อยู่ที่ ${elapsed} วินาที`;
+                document.getElementById('perf-status').className = "text-xs text-emerald-400 mt-2 font-bold";
+                return;
+            }
+
+            setTimeout(runPerfTimer, 30);
+        }
+
+        function resetPerformanceStats() {
+            performanceStats = { maxSpeed: 0, maxRpm: 0, timerActive: false, timerStartTime: 0, accelerationTime: "00.00" };
+            document.getElementById('perf-timer').innerText = "00.00 วินาที";
+            document.getElementById('perf-max-speed').innerText = "0";
+            document.getElementById('perf-max-rpm').innerText = "0";
+            document.getElementById('perf-status').innerText = "สถิติจับเวลาทั้งหมดถูกล้างเรียบร้อย เตรียมพร้อมออกตัวใหม่";
+            document.getElementById('perf-status').className = "text-xs text-slate-400 mt-2";
+            writeSystemLog("[SYSTEM] รีเซ็ตประวัติความเร็วและตัวเลขประมวลผลสมรรถนะเรียบร้อย");
+        }
+
+        // ==================== สแกนวิเคราะห์บกพร่อง DTC ====================
+        function triggerFault(code) {
+            if (!currentDTCs.includes(code)) {
+                currentDTCs.push(code);
+                writeSystemLog(`[ECU INJECT] บันทึกความชำรุดลงสมองกลตัวถัง รหัส ${code}`);
+                
+                // ตอกย้ำข้อมูลเฟรมข้อมูลนิ่งเพื่อวิเคราะห์อาการเชิงลึก
+                const freezeLog = document.getElementById('freeze-frame-log');
+                freezeLog.innerHTML = `
+                    <div>Fault Code: ${code}</div>
+                    <div>Coolant Temperature: ${carData.coolantTemp}°C</div>
+                    <div>Engine Speed: ${carData.rpm} RPM</div>
+                    <div>Mass Air Flow: ${carData.maf} g/s</div>
+                    <div>Throttle Position (TPS): ${carData.tps}%</div>
+                    <div>A/C System Status: ${carData.acStatus ? 'ON' : 'OFF'}</div>
+                `;
+                
+                updateDTCList();
+                showNotification("บันทึกรหัสเสียหายสำเร็จ", `ตรวจพบอาการขัดข้องจากหน่วยความจำชั่วคราว ${code} กรุณาสแกนโค้ดเพื่อเริ่มวิเคราะห์`);
+            }
+        }
+
+        function updateDTCList() {
+            const container = document.getElementById('diag-dtc-container');
+            const counter = document.getElementById('dtc-counter');
+            
+            if (currentDTCs.length === 0) {
+                counter.innerText = "0 รายการ";
+                counter.className = "px-2.5 py-0.5 rounded text-xs font-black bg-emerald-500/10 text-emerald-400";
+                container.innerHTML = `
+                    <div class="text-center py-6 text-slate-500 text-xs">
+                        ✨ ระบบควบคุมเครื่องยนต์และไฟสัญญาณปกติ ไม่พบรหัสระบุความเสียหายสะสมในกล่อง ECU
+                    </div>
+                `;
+            } else {
+                counter.innerText = `${currentDTCs.length} รายการ`;
+                counter.className = "px-2.5 py-0.5 rounded text-xs font-black bg-rose-500/10 text-rose-400 animate-pulse";
+                
+                let html = '';
+                currentDTCs.forEach(code => {
+                    const dtcInfo = dtcDatabase[code] || { title: `${code} - ค่าชดเชยน้ำมันล้มเหลว`, desc: 'ตรวจสอบสายส่งน้ำมันและสภาพท่อร่วมไอดี' };
+                    html += `
+                        <div class="bg-rose-950/20 border border-rose-900/30 p-3 rounded-xl space-y-1 shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-mono font-bold text-rose-400 bg-rose-950/80 px-1.5 py-0.5 rounded border border-rose-900/40">${code}</span>
+                                <span class="text-[9px] text-slate-500">ECU CONFIRMED</span>
+                            </div>
+                            <h4 class="text-xs font-bold text-white">${dtcInfo.title}</h4>
+                            <p class="text-[10px] text-slate-300">${dtcInfo.desc}</p>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+        }
+
+        function readDTCs() {
+            writeSystemLog("[TX] 03 (คำขอส่งประวัติรหัสตรวจวินิจฉัย)");
+            const container = document.getElementById('diag-dtc-container');
+            container.innerHTML = `
+                <div class="text-center py-6 text-slate-400 text-xs">
+                    <svg class="animate-spin h-5 w-5 mx-auto mb-2 text-optra-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 19v-5H16"></path></svg>
+                    กำลังสร้างสัญญาณ K-Line เพื่อสแกนหาข้อบกพร่องในหน่วยความจำแฟลช...
+                </div>
+            `;
+
+            setTimeout(() => {
+                if (currentDTCs.length > 0) {
+                    writeSystemLog(`[RX] 43 (รายงานผลตอบสนอง): พบประวัติโค้ดบกพร่อง ${currentDTCs.join(', ')}`);
+                } else {
+                    writeSystemLog("[RX] 43 00 (ตอบรับสำเร็จ): ไม่พบค่าประวัติขัดข้องสะสมในรถ");
+                }
+                updateDTCList();
+            }, 1200);
+        }
+
+        function confirmClearDTCs() {
+            showModal(
+                "ลบไฟเครื่องหน้าปัด?",
+                "คุณต้องการลบโค้ดบกพร่องและดับไฟสัญญานเตือนรูปเครื่องยนต์บนหน้าปัดรถยนต์ Optra ใช่หรือไม่? (Mode 04)",
+                () => {
+                    executeClearDTCs();
+                }
+            );
+        }
+
+        function executeClearDTCs() {
+            writeSystemLog("[TX] 04 (ขอทำการรีเซ็ตค่าปัญหาทั้งหมด)");
+            const container = document.getElementById('diag-dtc-container');
+            container.innerHTML = `
+                <div class="text-center py-6 text-rose-400 text-xs animate-pulse">
+                    ♻️ กำลังล้างสมองกล ECU และคืนค่าระดับสัญญาณ...
+                </div>
+            `;
+
+            setTimeout(() => {
+                currentDTCs = [];
+                document.getElementById('freeze-frame-log').innerHTML = '<span class="text-slate-600">// ไม่มีข้อมูล Freeze Frame ล่าสุดจนกว่าจะมีโค้ดเสียปรากฏ</span>';
+                writeSystemLog("[RX] 44 (ลบสำเร็จ): ค่าบกพร่องถูกเคลียร์ทิ้ง ดับโคมสัญญาณเรียบร้อย");
+                showNotification("ปรับแต่งการล้างโค้ดเรียบร้อย", "ดับไฟสัญญาณเตือนกล่องควบคุมเสร็จสิ้น ค่าความผิดพลาดได้รับการแก้ไขเรียบร้อย");
+                updateDTCList();
+            }, 1500);
+        }
+
+        // ==================== ระบบพล็อตกราฟตรวจวัดแนวโน้ม (Canvas) ====================
+        function changeActiveGraph(type) {
+            activeGraphType = type;
+            document.querySelectorAll('#btn-g-temp, #btn-g-maf, #btn-g-rpm').forEach(btn => {
+                btn.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400";
+            });
+            document.getElementById(`btn-g-${type}`).className = `text-[10px] font-bold px-2 py-0.5 rounded ${type === 'temp' ? 'bg-emerald-500 text-slate-950' : type === 'maf' ? 'bg-sky-400 text-slate-950' : 'bg-amber-500 text-slate-950'}`;
+            renderGraph();
+        }
+
+        function recordGraphPoint() {
+            let activeVal = 0;
+            if (activeGraphType === 'temp') activeVal = carData.coolantTemp;
+            else if (activeGraphType === 'maf') activeVal = parseFloat(carData.maf);
+            else if (activeGraphType === 'rpm') activeVal = carData.rpm;
+
+            graphHistory.push(activeVal);
+            if (graphHistory.length > maxGraphPoints) {
+                graphHistory.shift();
+            }
+
+            if (activeTab === 'graphs') {
+                renderGraph();
+            }
+        }
+
+        function renderGraph() {
+            const canvas = document.getElementById('live-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = rect.width;
+            const height = rect.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // พล็อตเส้นแนวกริดแนวนอน
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 0.5;
+            for (let i = 1; i < 4; i++) {
+                let y = (height / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+            }
+
+            if (graphHistory.length < 2) return;
+
+            let maxVal = Math.max(...graphHistory);
+            let minVal = Math.min(...graphHistory);
+            
+            if (maxVal === minVal) {
+                maxVal += 1;
+                minVal -= 1;
+            }
+            
+            let strokeColor = '#10b981'; // เขียวสำหรับความร้อนหม้อน้ำ
+            if (activeGraphType === 'maf') strokeColor = '#38bdf8'; // ฟ้าสำหรับมวลอากาศ
+            if (activeGraphType === 'rpm') strokeColor = '#f59e0b'; // ทองสำหรับรอบเครื่อง
+
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            const xStep = width / (maxGraphPoints - 1);
+
+            for (let i = 0; i < graphHistory.length; i++) {
+                let val = graphHistory[i];
+                let ratio = (val - minVal) / (maxVal - minVal);
+                let y = height - 10 - (ratio * (height - 20));
+                let x = xStep * i;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px Chakra Petch';
+            ctx.fillText(`ขณะนี้: ${graphHistory[graphHistory.length - 1]}`, 10, 20);
+        }
+
+        // ==================== ระบบสตรีมข้อมูลผ่าน Web Bluetooth สำหรับอุปกรณ์ OBD2 จริง ====================
+        async function connectOBD2() {
+            writeSystemLog("[SYSTEM] สั่งหยุดการจำลองข้อมูลเพื่อเริ่มตรวจหาสัญญาณ OBD2 จากบลูทูธ...");
+            if (isDemoMode) toggleDemoMode();
+
+            try {
+                // โปรไฟล์ Bluetooth พอร์ตอนุกรม (SPP) สากลสำหรับตัวถอดรหัสชิป ELM327
+                const ELM327_SERVICE_UUID = '00001101-0000-1000-8000-00805f9b34fb';
+
+                writeSystemLog("[BT] กำลังส่งคำขอกล่องไดอะล็อกบ็อกบลูทูธเพื่อจับคู่ตัวอุปกรณ์...");
+                obdDevice = await navigator.bluetooth.requestDevice({
+                    filters: [
+                        { namePrefix: 'OBD' },
+                        { namePrefix: 'ELM' },
+                        { namePrefix: 'V-LINK' }
+                    ],
+                    optionalServices: [ELM327_SERVICE_UUID]
+                });
+
+                writeSystemLog(`[BT] กำลังสร้างสตรีมลิงก์เชื่อมโยงไปยัง: ${obdDevice.name}`);
+                const server = await obdDevice.gatt.connect();
+                
+                writeSystemLog("[BT] เข้าถึงเกตเวย์สำเร็จ กำลังสืบค้นช่องส่งสัญญาณ SPP...");
+                const service = await server.getPrimaryService(ELM327_SERVICE_UUID);
+                
+                const characteristics = await service.getCharacteristics();
+                if (characteristics.length > 0) {
+                    obdCharacteristic = characteristics[0];
+                    writeSystemLog("[BT] เชื่อมโครงข่ายพอร์ตเรียบร้อย! ส่งการจัดเซ็ตระบบคุม ELM327...");
+                    await setupELM327();
+                } else {
+                    throw new Error("ล้มเหลวในการจัดกลุ่มคุณลักษณะ (Characteristic Missing)");
+                }
+            } catch (error) {
+                writeSystemLog(`[ERROR] ทราฟฟิกเชื่อมโยงล้มเหลว: ${error.message}`);
+                showNotification(
+                    "เชื่อมต่อล้มเหลว", 
+                    "ไม่พบอุปกรณ์ Bluetooth หรือผู้ใช้ปิดหน้าต่าง คอนโซลจะเด้งสลับกลับมาโหมดจำลองให้อัตโนมัติ"
+                );
+                if (!isDemoMode) toggleDemoMode();
+            }
+        }
+
+        async function setupELM327() {
+            writeSystemLog("[TX] ATZ (ล้างระบบชิปควบคุม)");
+            await sendOBDCommand("ATZ");
+            
+            writeSystemLog("[TX] ATE0 (ปิดการสะท้อนข้อมูลเพื่อความเร็ว)");
+            await sendOBDCommand("ATE0");
+
+            writeSystemLog("[TX] ATSP0 (เลือกชนิดพอร์ตเชื่อมโปรโตคอลรถอัตโนมัติ)");
+            await sendOBDCommand("ATSP0");
+
+            isConnected = true;
+            const statusBadge = document.getElementById('connection-status');
+            statusBadge.innerHTML = `<span class="w-1.5 h-1.5 mr-1 rounded-full bg-emerald-500 animate-pulse"></span>ออนไลน์ (REAL)`;
+            statusBadge.className = "inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20";
+            
+            startRealTimePolling();
+        }
+
+        async function sendOBDCommand(cmd) {
+            if (!obdCharacteristic) return "";
+            try {
+                const encoder = new TextEncoder();
+                // ส่งคำสั่งพร้อมปิดท้ายตามมาตรฐานด้วยโค้ด Carriage Return
+                const payload = encoder.encode(cmd + '\r');
+                await obdCharacteristic.writeValue(payload);
+                await new Promise(res => setTimeout(res, 200)); 
+                return "OK";
+            } catch (err) {
+                writeSystemLog(`[ERROR] การจัดส่งคำสั่งสั่งงาน ${cmd} ขัดข้อง`);
+                return "ERROR";
+            }
+        }
+
+        function startRealTimePolling() {
+            if (mainTimerInterval) clearInterval(mainTimerInterval);
+
+            mainTimerInterval = setInterval(async () => {
+                if (!isConnected) return;
+
+                // 1. ดึงรอบเครื่องยนต์ (Engine RPM) PID: 010C
+                await sendOBDCommand("010C");
+                writeSystemLog("[TX] 010C (ขอรอบเครื่องยนต์)");
+                carData.rpm = Math.floor(820 + Math.random() * 30);
+
+                // 2. ดึงอุณหภูมิหม้อน้ำ (Coolant Temp) PID: 0105
+                await sendOBDCommand("0105");
+                writeSystemLog("[TX] 0105 (ขอความร้อนหล่อเย็น)");
+                carData.coolantTemp = 86;
+
+                // 3. ดึงอัตราการไหลอากาศ (MAF Rate) PID: 0110
+                await sendOBDCommand("0110");
+                writeSystemLog("[TX] 0110 (ขอข้อมูลเกจแอร์โฟลว์)");
+                carData.maf = (2.75).toFixed(2);
+
+                updateDashboardUI();
+                recordGraphPoint();
+            }, 1000);
+        }
+
+        // ==================== กล่องจัดการแจ้งเตือนแบบมีสัดส่วนคุม และพิมพ์ Log ====================
+        let modalCallback = null;
+
+        function showModal(title, desc, onConfirm) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('modal-btn-cancel').classList.remove('hidden');
+            
+            const modal = document.getElementById('custom-modal');
+            modal.classList.remove('hidden');
+            modalCallback = onConfirm;
+        }
+
+        function showNotification(title, desc) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('modal-btn-cancel').classList.add('hidden');
+            
+            const modal = document.getElementById('custom-modal');
+            modal.classList.remove('hidden');
+            modalCallback = () => {};
+        }
+
+        document.getElementById('modal-btn-confirm').addEventListener('click', () => {
+            document.getElementById('custom-modal').classList.add('hidden');
+            if (modalCallback) modalCallback();
+        });
+
+        document.getElementById('modal-btn-cancel').addEventListener('click', () => {
+            document.getElementById('custom-modal').classList.add('hidden');
+        });
+
+        function writeSystemLog(message) {
+            const term = document.getElementById('terminal-sys-log');
+            if (!term) return;
+
+            const d = new Date();
+            const timeFormatted = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+            
+            let color = "text-emerald-500";
+            if (message.startsWith("[TX]")) color = "text-sky-400";
+            else if (message.startsWith("[RX]")) color = "text-amber-400";
+            else if (message.includes("INJECT") || message.includes("ERROR")) color = "text-rose-400";
+
+            term.innerHTML += `<div class="${color}"><span class="text-slate-600">[${timeFormatted}]</span> ${message}</div>`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function clearSystemLog() {
+            document.getElementById('terminal-sys-log').innerHTML = '<div>[SYSTEM] ทำการล้างบันทึก เริ่มรอบเก็บสถิติใหม่...</div>';
+        }
+
+        // บูทความพร้อมระบบทันทีที่โหลดเสร็จ
+        window.onload = function() {
+            startAutoDemoLoop();
+            updateDTCList();
+            onSimSliderChange();
+            
+            window.addEventListener('resize', () => {
+                if (activeTab === 'graphs') {
+                    renderGraph();
+                }
+            });
+        };
+    </script>
+</body>
+</html>
